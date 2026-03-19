@@ -101,20 +101,28 @@ def _pick(obj: Any, keys: list[str]) -> dict:
 
 
 def _trim_job(job: dict) -> dict:
-    return {
+    result: dict[str, Any] = {
         "id": job.get("id"),
         "title": job.get("title"),
         "status": job.get("status"),
-        "employmentType": job.get("employmentType"),
         "departmentId": job.get("departmentId"),
         "locationId": job.get("locationId"),
-        "interviewPlanId": job.get("interviewPlanId"),
-        **( {"hiringTeam": [
-                {"name": m.get("name"), "role": m.get("role")}
-                for m in job.get("hiringTeam", [])
-            ]} if job.get("hiringTeam") else {}
-        ),
     }
+    # interviewPlan is an object with an id, not a top-level interviewPlanId
+    interview_plan = job.get("interviewPlan")
+    if isinstance(interview_plan, dict):
+        result["interviewPlanId"] = interview_plan.get("id")
+    # hiringTeam members have firstName/lastName, not a single name field
+    if job.get("hiringTeam"):
+        result["hiringTeam"] = [
+            {
+                "name": f"{m.get('firstName', '')} {m.get('lastName', '')}".strip() or None,
+                "email": m.get("email"),
+                "role": m.get("role"),
+            }
+            for m in job["hiringTeam"]
+        ]
+    return result
 
 
 def _trim_candidate(cand: dict) -> dict:
