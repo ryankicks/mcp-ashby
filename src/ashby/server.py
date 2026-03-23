@@ -576,6 +576,108 @@ TOOLS = [
         },
     ),
 
+    # ── Interview Scheduling ─────────────────────────────────────────────
+    types.Tool(
+        name="interview_schedule_create",
+        description=(
+            "Schedule an interview for a candidate. Creates interview events with "
+            "interviewers at specific times. Requires the candidate's applicationId "
+            "and an array of interview events with start/end times and interviewer emails."
+        ),
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "applicationId": {"type": "string", "description": "The application ID (UUID)."},
+                "interviewStageId": {"type": "string", "description": "Interview stage to link this schedule to (optional)."},
+                "interviewEvents": {
+                    "type": "array",
+                    "description": "Interview events to schedule.",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "startTime": {"type": "string", "description": "ISO 8601 start time, e.g. '2026-03-25T15:00:00.000Z'."},
+                            "endTime": {"type": "string", "description": "ISO 8601 end time, e.g. '2026-03-25T16:00:00.000Z'."},
+                            "interviewers": {
+                                "type": "array",
+                                "description": "Interviewers for this event.",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "email": {"type": "string", "description": "Interviewer email (must be an Ashby user)."},
+                                        "userId": {"type": "string", "description": "Interviewer user ID (alternative to email)."},
+                                        "feedbackRequired": {"type": "boolean", "description": "Require feedback (default false)."},
+                                    },
+                                },
+                            },
+                            "interviewId": {"type": "string", "description": "Interview template ID (optional)."},
+                        },
+                        "required": ["startTime", "endTime", "interviewers"],
+                    },
+                },
+            },
+            "required": ["applicationId", "interviewEvents"],
+        },
+    ),
+    types.Tool(
+        name="interview_schedule_list",
+        description="List interview schedules. Filter by application or interview stage.",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "applicationId": {"type": "string", "description": "Filter by application ID."},
+                "interviewStageId": {"type": "string", "description": "Filter by interview stage ID."},
+                "limit": {"type": "integer", "description": "Max results per page."},
+                "cursor": {"type": "string", "description": "Cursor for next page."},
+            },
+        },
+    ),
+    types.Tool(
+        name="interview_schedule_update",
+        description="Update an interview schedule — add, modify, or cancel events.",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "interviewScheduleId": {"type": "string", "description": "The schedule ID to update."},
+                "interviewEvent": {
+                    "type": "object",
+                    "description": "Event to create or update.",
+                    "properties": {
+                        "startTime": {"type": "string", "description": "ISO 8601 start time."},
+                        "endTime": {"type": "string", "description": "ISO 8601 end time."},
+                        "interviewers": {"type": "array", "items": {"type": "object", "properties": {"email": {"type": "string"}, "userId": {"type": "string"}, "feedbackRequired": {"type": "boolean"}}}},
+                        "interviewEventId": {"type": "string", "description": "Existing event ID to update."},
+                        "interviewId": {"type": "string", "description": "Interview template ID."},
+                    },
+                },
+                "interviewEventIdToCancel": {"type": "string", "description": "Event ID to cancel (alternative to interviewEvent)."},
+            },
+            "required": ["interviewScheduleId"],
+        },
+    ),
+    types.Tool(
+        name="interview_schedule_cancel",
+        description="Cancel an entire interview schedule.",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "id": {"type": "string", "description": "The interview schedule ID to cancel."},
+                "allowReschedule": {"type": "boolean", "description": "Allow rescheduling (default false)."},
+            },
+            "required": ["id"],
+        },
+    ),
+    types.Tool(
+        name="interview_event_list",
+        description="List interview events for a given schedule.",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "interviewScheduleId": {"type": "string", "description": "The interview schedule ID."},
+            },
+            "required": ["interviewScheduleId"],
+        },
+    ),
+
     # ── Consolidated lookup tool (#5) ─────────────────────────────────────
     types.Tool(
         name="lookup",
@@ -663,6 +765,11 @@ TOOL_ENDPOINT_MAP = {
     "interview_plan_list": "/interviewPlan.list",
     "interview_list": "/interview.list",
     "interview_info": "/interview.info",
+    "interview_schedule_create": "/interviewSchedule.create",
+    "interview_schedule_list": "/interviewSchedule.list",
+    "interview_schedule_update": "/interviewSchedule.update",
+    "interview_schedule_cancel": "/interviewSchedule.cancel",
+    "interview_event_list": "/interviewEvent.list",
 }
 
 # Lookup type -> (endpoint, archive_param_name)
@@ -685,6 +792,7 @@ PAGINATED_TOOLS = {
 WRITE_TOOLS = {
     "candidate_create", "application_create", "application_change_stage",
     "candidate_create_note", "candidate_add_tag",
+    "interview_schedule_create", "interview_schedule_update", "interview_schedule_cancel",
 }
 
 
