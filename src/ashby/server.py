@@ -592,6 +592,59 @@ TOOLS = [
             "required": ["applicationId"],
         },
     ),
+    types.Tool(
+        name="application_feedback_submit",
+        description=(
+            "Submit interview feedback for a candidate's application. First use "
+            "application_feedback_list to see the form definition (field paths and valid values). "
+            "Score values: '4' = Strong Yes, '3' = Yes, '2' = No, '1' = Strong No. "
+            "Feedback text uses PlainText format: {\"type\": \"PlainText\", \"value\": \"your text\"}. "
+            "This is a WRITE operation."
+        ),
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "applicationId": {"type": "string", "description": "The application ID."},
+                "formDefinitionId": {
+                    "type": "string",
+                    "description": "The feedback form definition ID. Get from application_feedback_list response's feedbackFormDefinitionId.",
+                },
+                "feedbackForm": {
+                    "type": "object",
+                    "description": "The feedback form submission.",
+                    "properties": {
+                        "fieldSubmissions": {
+                            "type": "array",
+                            "description": "Array of field submissions.",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "path": {
+                                        "type": "string",
+                                        "description": "Field path (e.g., 'overall_recommendation', 'feedback').",
+                                    },
+                                    "value": {
+                                        "description": "Field value. For Score/ValueSelect: a string like '3'. For RichText: {\"type\": \"PlainText\", \"value\": \"your text\"}.",
+                                    },
+                                },
+                                "required": ["path", "value"],
+                            },
+                        },
+                    },
+                    "required": ["fieldSubmissions"],
+                },
+                "interviewEventId": {
+                    "type": "string",
+                    "description": "The interview event ID to attach feedback to (optional). Get from interview_event_list.",
+                },
+                "userId": {
+                    "type": "string",
+                    "description": "User ID to credit feedback to (optional, defaults to API key user).",
+                },
+            },
+            "required": ["applicationId", "formDefinitionId", "feedbackForm"],
+        },
+    ),
 
     # ── Interview Scheduling ─────────────────────────────────────────────
     types.Tool(
@@ -783,6 +836,7 @@ TOOL_ENDPOINT_MAP = {
     "interview_list": "/interview.list",
     "interview_info": "/interview.info",
     "application_feedback_list": "/applicationFeedback.list",
+    "application_feedback_submit": "/applicationFeedback.submit",
     "interview_schedule_create": "/interviewSchedule.create",
     "interview_schedule_list": "/interviewSchedule.list",
     "interview_schedule_update": "/interviewSchedule.update",
@@ -810,6 +864,7 @@ PAGINATED_TOOLS = {
 WRITE_TOOLS = {
     "candidate_create", "application_create", "application_change_stage",
     "candidate_create_note", "candidate_add_tag",
+    "application_feedback_submit",
     "interview_schedule_create", "interview_schedule_update", "interview_schedule_cancel",
 }
 
