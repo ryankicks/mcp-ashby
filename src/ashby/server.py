@@ -387,6 +387,40 @@ TOOLS = [
         },
     ),
     types.Tool(
+        name="candidate_update",
+        description=(
+            "Update a candidate's info — name, email, phone, LinkedIn, GitHub, website, location. "
+            "All fields optional except candidateId. This is a WRITE operation."
+        ),
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "candidateId": {"type": "string", "description": "The candidate ID (UUID)."},
+                "name": {"type": "string", "description": "Full name."},
+                "email": {"type": "string", "description": "Primary email address."},
+                "phoneNumber": {"type": "string", "description": "Phone number."},
+                "linkedInUrl": {"type": "string", "description": "LinkedIn profile URL."},
+                "githubUrl": {"type": "string", "description": "GitHub profile URL."},
+                "websiteUrl": {"type": "string", "description": "Personal website URL."},
+                "alternateEmail": {"type": "string", "description": "Additional email address."},
+                "socialLinks": {
+                    "type": "array",
+                    "description": "Social links array. Replaces all existing links. Types: LinkedIn, GitHub, Twitter, Medium, StackOverflow, Website.",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "type": {"type": "string", "enum": ["LinkedIn", "GitHub", "Twitter", "Medium", "StackOverflow", "Website"]},
+                            "url": {"type": "string"},
+                        },
+                        "required": ["type", "url"],
+                    },
+                },
+                "sendNotifications": {"type": "boolean", "description": "Notify subscribed users (default true)."},
+            },
+            "required": ["candidateId"],
+        },
+    ),
+    types.Tool(
         name="candidate_create_note",
         description=(
             "Add a note to a candidate. Supports HTML formatting in the note body. "
@@ -824,6 +858,7 @@ TOOL_ENDPOINT_MAP = {
     "candidate_search": "/candidate.search",
     "candidate_info": "/candidate.info",
     "candidate_create": "/candidate.create",
+    "candidate_update": "/candidate.update",
     "candidate_create_note": "/candidate.createNote",
     "candidate_list_notes": "/candidate.listNotes",
     "candidate_add_tag": "/candidate.addTag",
@@ -862,7 +897,7 @@ PAGINATED_TOOLS = {
 
 # Write tools — these get a confirmation reminder in the response (#10)
 WRITE_TOOLS = {
-    "candidate_create", "application_create", "application_change_stage",
+    "candidate_create", "candidate_update", "application_create", "application_change_stage",
     "candidate_create_note", "candidate_add_tag",
     "application_feedback_submit",
     "interview_schedule_create", "interview_schedule_update", "interview_schedule_cancel",
