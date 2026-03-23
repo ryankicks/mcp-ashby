@@ -576,6 +576,23 @@ TOOLS = [
         },
     ),
 
+    # ── Application Feedback ─────────────────────────────────────────────
+    types.Tool(
+        name="application_feedback_list",
+        description=(
+            "List all feedback submitted for an application. Returns interviewer scores, "
+            "comments, and structured feedback form responses. Use this to check if feedback "
+            "has been submitted after an interview."
+        ),
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "applicationId": {"type": "string", "description": "The application ID to fetch feedback for."},
+            },
+            "required": ["applicationId"],
+        },
+    ),
+
     # ── Interview Scheduling ─────────────────────────────────────────────
     types.Tool(
         name="interview_schedule_create",
@@ -765,6 +782,7 @@ TOOL_ENDPOINT_MAP = {
     "interview_plan_list": "/interviewPlan.list",
     "interview_list": "/interview.list",
     "interview_info": "/interview.info",
+    "application_feedback_list": "/applicationFeedback.list",
     "interview_schedule_create": "/interviewSchedule.create",
     "interview_schedule_list": "/interviewSchedule.list",
     "interview_schedule_update": "/interviewSchedule.update",
