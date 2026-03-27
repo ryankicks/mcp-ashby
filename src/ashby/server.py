@@ -132,16 +132,33 @@ def _trim_job(job: dict) -> dict:
 
 def _trim_candidate(cand: dict) -> dict:
     emails = cand.get("emailAddresses", [])
-    return {
+
+    # LinkedIn URL: check linkedInUrl first, then fall back to socialLinks
+    linkedin_url = cand.get("linkedInUrl")
+    if not linkedin_url:
+        for link in cand.get("socialLinks", []):
+            if isinstance(link, dict) and link.get("type") == "LinkedIn":
+                linkedin_url = link.get("url")
+                break
+
+    profile_url = cand.get("profileUrl")
+
+    result = {
         "id": cand.get("id"),
         "name": cand.get("name"),
         "emails": [e.get("value") for e in emails] if emails else [],
         "phoneNumbers": [p.get("value") for p in cand.get("phoneNumbers", [])] if cand.get("phoneNumbers") else [],
-        "linkedInUrl": cand.get("linkedInUrl"),
+        "linkedInUrl": linkedin_url,
         "applicationIds": cand.get("applicationIds", []),
         "tags": [t.get("name") if isinstance(t, dict) else t for t in cand.get("tags", [])],
         "createdAt": cand.get("createdAt"),
     }
+    if profile_url:
+        result["profileUrl"] = profile_url
+    social_links = cand.get("socialLinks", [])
+    if social_links:
+        result["socialLinks"] = social_links
+    return result
 
 
 def _trim_application(app: dict) -> dict:
@@ -846,6 +863,22 @@ TOOLS = [
             "required": ["candidateId"],
         },
     ),
+    # ── Files ──────────────────────────────────────────────────────────────
+    types.Tool(
+        name="candidate_get_resume",
+        description=(
+            "Get the download URL for a candidate's resume or other attached files. "
+            "Takes a candidateId, looks up their fileHandles, and returns download URLs. "
+            "Returns the file name, handle, and a temporary download URL for each file."
+        ),
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "candidateId": {"type": "string", "description": "The candidate ID (UUID)."},
+            },
+            "required": ["candidateId"],
+        },
+    ),
 ]
 
 
@@ -995,6 +1028,52 @@ async def _handle_candidate_full_profile(arguments: dict) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Resume/file handler
+# ---------------------------------------------------------------------------
+async def _handle_candidate_get_resume(arguments: dict) -> str:
+    candidate_id = arguments["candidateId"]
+
+    # Fetch candidate info (full, not trimmed) to get fileHandles
+    cand_resp = ashby.post("/candidate.info", data={"id": candidate_id})
+    candidate = cand_resp.get("results", cand_resp)
+    name = candidate.get("name", candidate_id)
+    file_handles = candidate.get("fileHandles", [])
+
+    if not file_handles:
+        return json.dumps({
+            "candidate": name,
+            "files": [],
+            "message": "No files attached to this candidate.",
+        }, indent=2)
+
+    # Look up download URL for each file
+    files = []
+    for fh in file_handles:
+        handle = fh.get("handle")
+        if not handle:
+            continue
+        try:
+            file_resp = ashby.post("/file.info", data={"fileHandle": handle})
+            file_result = file_resp.get("results", file_resp)
+            files.append({
+                "name": fh.get("name", "unknown"),
+                "id": fh.get("id"),
+                "url": file_result.get("url"),
+            })
+        except Exception as e:
+            files.append({
+                "name": fh.get("name", "unknown"),
+                "id": fh.get("id"),
+                "error": str(e),
+            })
+
+    return json.dumps({
+        "candidate": name,
+        "files": files,
+    }, indent=2)
+
+
+# ---------------------------------------------------------------------------
 # Lookup handler (#5)
 # ---------------------------------------------------------------------------
 async def _handle_lookup(arguments: dict) -> str:
@@ -1026,6 +1105,10 @@ async def handle_call_tool(name: str, arguments: dict[str, Any]) -> list[types.T
 
         if name == "candidate_full_profile":
             text = await _handle_candidate_full_profile(arguments)
+            return [types.TextContent(type="text", text=text)]
+
+        if name == "candidate_get_resume":
+            text = await _handle_candidate_get_resume(arguments)
             return [types.TextContent(type="text", text=text)]
 
         # Consolidated lookup tool
