@@ -318,9 +318,9 @@ TOOLS = [
         inputSchema={
             "type": "object",
             "properties": {
-                "id": {"type": "string", "description": "The job ID (UUID). Get IDs from job_list or job_search."},
+                "jobId": {"type": "string", "description": "The job ID (UUID). Get IDs from job_list or job_search."},
             },
-            "required": ["id"],
+            "required": ["jobId"],
         },
     ),
     types.Tool(
@@ -378,9 +378,9 @@ TOOLS = [
         inputSchema={
             "type": "object",
             "properties": {
-                "id": {"type": "string", "description": "The candidate ID (UUID)."},
+                "candidateId": {"type": "string", "description": "The candidate ID (UUID)."},
             },
-            "required": ["id"],
+            "required": ["candidateId"],
         },
     ),
     types.Tool(
@@ -621,9 +621,9 @@ TOOLS = [
         inputSchema={
             "type": "object",
             "properties": {
-                "id": {"type": "string", "description": "The interview ID."},
+                "interviewId": {"type": "string", "description": "The interview ID."},
             },
-            "required": ["id"],
+            "required": ["interviewId"],
         },
     ),
 
@@ -781,10 +781,10 @@ TOOLS = [
         inputSchema={
             "type": "object",
             "properties": {
-                "id": {"type": "string", "description": "The interview schedule ID to cancel."},
+                "interviewScheduleId": {"type": "string", "description": "The interview schedule ID to cancel."},
                 "allowReschedule": {"type": "boolean", "description": "Allow rescheduling (default false)."},
             },
-            "required": ["id"],
+            "required": ["interviewScheduleId"],
         },
     ),
     types.Tool(
@@ -1120,6 +1120,17 @@ async def handle_call_tool(name: str, arguments: dict[str, Any]) -> list[types.T
         endpoint = TOOL_ENDPOINT_MAP.get(name)
         if not endpoint:
             return [types.TextContent(type="text", text=f"Unknown tool: {name}")]
+
+        # Remap descriptive parameter names to Ashby's generic "id"
+        _ID_REMAP = {
+            "candidate_info": "candidateId",
+            "job_info": "jobId",
+            "interview_info": "interviewId",
+            "interview_schedule_cancel": "interviewScheduleId",
+        }
+        id_param = _ID_REMAP.get(name)
+        if id_param and id_param in arguments:
+            arguments["id"] = arguments.pop(id_param)
 
         # Handle allPages parameter (#9)
         use_all_pages = arguments.pop("allPages", False)
