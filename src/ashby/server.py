@@ -709,7 +709,7 @@ TOOLS = [
             "type": "object",
             "properties": {
                 "applicationId": {"type": "string", "description": "The application ID (UUID)."},
-                "interviewStageId": {"type": "string", "description": "Interview stage to link this schedule to (optional)."},
+                "interviewStageId": {"type": "string", "description": "Interview stage to link this schedule to. Required — get from interview_stage_list."},
                 "interviewEvents": {
                     "type": "array",
                     "description": "Interview events to schedule.",
@@ -736,7 +736,7 @@ TOOLS = [
                     },
                 },
             },
-            "required": ["applicationId", "interviewEvents"],
+            "required": ["applicationId", "interviewStageId", "interviewEvents"],
         },
     ),
     types.Tool(
